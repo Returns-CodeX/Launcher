@@ -1082,725 +1082,569 @@ class LauncherState:
 # No-login launcher interface
 # =============================================================================
 
+# =============================================================================
+# Black-and-red launcher interface
+# =============================================================================
+
 HTML_PAGE = r"""<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CodeX Returns Arcade</title>
+<meta name="theme-color" content="#090707">
+<title>CODEX-RETURNS // ARCADE</title>
 <style>
 :root {
-    --bg: #090a10;
-    --panel: rgba(18, 20, 30, .86);
-    --panel-2: #151724;
-    --line: rgba(255,255,255,.1);
-    --text: #f5f6fb;
-    --muted: #9296aa;
-    --purple: #a889ff;
-    --cyan: #6be7dc;
-    --pink: #ff77bb;
-    --green: #78e6ae;
+    color-scheme: dark;
+    --bg: #090707;
+    --bg-soft: #100a0b;
+    --panel: rgba(20, 12, 13, .88);
+    --panel-2: #170d0f;
+    --line: rgba(255, 49, 67, .17);
+    --line-hot: rgba(255, 49, 67, .42);
+    --red: #ff263d;
+    --red-hot: #ff4657;
+    --red-dim: #a50f23;
+    --text: #f7f1f1;
+    --muted: #a59698;
+    --green: #63e6a5;
+    --gold: #d7b16a;
+    --radius: 16px;
+    --glow: 0 0 28px rgba(255, 38, 61, .14);
 }
-
 * { box-sizing: border-box; }
-
-html, body {
-    min-height: 100%;
-    margin: 0;
-}
-
+html, body { min-height: 100%; margin: 0; }
 body {
-    overflow-x: hidden;
-    color: var(--text);
+    overflow: hidden;
     background: var(--bg);
-    font-family: Arial, sans-serif;
+    color: var(--text);
+    font-family: "Segoe UI", Arial, sans-serif;
 }
-
-button, input {
-    font: inherit;
+button, input, select { font: inherit; }
+button { cursor: pointer; }
+button:disabled { opacity: .48; cursor: not-allowed; }
+button:focus-visible, input:focus-visible, select:focus-visible {
+    outline: 2px solid var(--red-hot);
+    outline-offset: 3px;
 }
-
-button {
-    cursor: pointer;
-}
-
-button:disabled {
-    cursor: not-allowed;
-    opacity: .55;
-}
-
-#particles {
+#fx-canvas {
     position: fixed;
     inset: 0;
     z-index: -1;
     width: 100%;
     height: 100%;
+    pointer-events: none;
 }
-
-.background {
+.backdrop {
     position: fixed;
     inset: 0;
     z-index: -2;
+    pointer-events: none;
     background:
-        radial-gradient(circle at 8% 12%, rgba(168,137,255,.2), transparent 25rem),
-        radial-gradient(circle at 88% 82%, rgba(107,231,220,.12), transparent 26rem),
-        linear-gradient(140deg, #090a10, #0d0f18);
+        radial-gradient(ellipse at 12% 8%, rgba(128, 12, 27, .23), transparent 34rem),
+        radial-gradient(ellipse at 92% 92%, rgba(89, 8, 18, .19), transparent 33rem),
+        linear-gradient(145deg, #090707 0%, #0c0809 58%, #080707 100%);
 }
-
-.app {
-    display: flex;
-    min-height: 100vh;
+.scanlines {
+    position: fixed;
+    inset: 0;
+    z-index: 15;
+    pointer-events: none;
+    opacity: .12;
+    background: repeating-linear-gradient(
+        to bottom, transparent 0 3px, rgba(255,255,255,.025) 4px
+    );
 }
-
+.app { display: flex; width: 100%; height: 100vh; }
 .sidebar {
-    width: 235px;
+    width: 238px;
     flex: none;
-    padding: 22px 16px;
     display: flex;
     flex-direction: column;
+    padding: 20px 14px;
     border-right: 1px solid var(--line);
-    background: rgba(8,9,14,.72);
+    background: rgba(9, 7, 7, .85);
     backdrop-filter: blur(18px);
 }
-
 .brand {
     display: flex;
     align-items: center;
-    gap: 11px;
-    padding: 4px 8px 26px;
+    gap: 12px;
+    padding: 5px 8px 26px;
 }
-
 .brand-mark {
-    width: 40px;
-    height: 40px;
+    width: 42px;
+    height: 42px;
     display: grid;
     place-items: center;
-    border-radius: 13px;
-    color: #10111a;
-    font-weight: 900;
-    background: linear-gradient(135deg, var(--purple), var(--cyan));
-    box-shadow: 0 8px 24px rgba(168,137,255,.3);
+    border: 1px solid rgba(255,255,255,.18);
+    border-radius: 12px;
+    color: white;
+    font-weight: 1000;
+    font-size: 19px;
+    background: linear-gradient(145deg, #ff3b4e, #8e071a);
+    box-shadow: 0 0 24px rgba(255,38,61,.3), inset 0 1px rgba(255,255,255,.25);
 }
-
 .brand-name {
-    font-weight: 800;
-    letter-spacing: .14em;
-    font-size: 15px;
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: .16em;
 }
-
 .brand-sub {
     display: block;
     margin-top: 4px;
     color: var(--muted);
     font-size: 9px;
-    letter-spacing: .16em;
+    letter-spacing: .17em;
 }
-
 .nav-label {
-    padding: 8px 10px;
-    color: #686b7d;
-    font-size: 10px;
+    padding: 7px 10px;
+    color: #806f71;
+    font-size: 9px;
     font-weight: 800;
-    letter-spacing: .16em;
+    letter-spacing: .18em;
 }
-
-.nav {
-    display: grid;
-    gap: 5px;
-}
-
+.nav { display: grid; gap: 5px; }
 .nav button {
-    height: 44px;
     display: flex;
     align-items: center;
-    gap: 11px;
-    border: 0;
-    border-radius: 12px;
+    gap: 12px;
+    min-height: 43px;
     padding: 0 12px;
-    color: var(--muted);
+    border: 1px solid transparent;
+    border-radius: 10px;
+    color: #b7a9aa;
     background: transparent;
     text-align: left;
+    transition: .18s ease;
 }
-
-.nav button:hover,
+.nav button:hover {
+    color: white;
+    border-color: var(--line);
+    background: rgba(255,38,61,.055);
+}
 .nav button.active {
-    color: var(--text);
-    background: rgba(255,255,255,.06);
+    color: white;
+    border-color: rgba(255,38,61,.24);
+    background: linear-gradient(90deg, rgba(255,38,61,.16), rgba(255,38,61,.025));
+    box-shadow: inset 2px 0 var(--red), var(--glow);
 }
-
-.nav button.active {
-    box-shadow: inset 2px 0 var(--purple);
-}
-
-.nav-icon {
-    width: 20px;
-    color: var(--purple);
+.nav-icon { width: 20px; color: var(--red-hot); text-align: center; }
+.nav-count {
+    min-width: 22px;
+    margin-left: auto;
+    padding: 2px 6px;
+    border-radius: 20px;
+    color: #ffd9dc;
+    background: rgba(255,38,61,.15);
+    font-size: 10px;
     text-align: center;
 }
-
-.sidebar-status {
-    margin-top: auto;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px;
-    color: var(--muted);
-    font-size: 12px;
+.sidebar-bottom { margin-top: auto; }
+.engine-card {
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: rgba(255,38,61,.035);
 }
-
-.sidebar-status i {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--green);
-    box-shadow: 0 0 12px var(--green);
+.engine-top { display: flex; align-items: center; gap: 8px; font-size: 11px; }
+.engine-led {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--green); box-shadow: 0 0 9px var(--green);
 }
-
-.main {
-    min-width: 0;
-    flex: 1;
-    overflow: auto;
-}
-
+.engine-detail { margin: 7px 0 0 15px; color: var(--muted); font-size: 10px; }
+.main { min-width: 0; flex: 1; overflow: auto; }
 .topbar {
-    height: 72px;
+    height: 66px;
     position: sticky;
     top: 0;
-    z-index: 20;
+    z-index: 10;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 30px;
+    padding: 0 28px;
     border-bottom: 1px solid var(--line);
-    background: rgba(9,10,16,.72);
+    background: rgba(9,7,7,.78);
     backdrop-filter: blur(18px);
 }
-
-.topbar-title {
-    font-size: 13px;
-    font-weight: 700;
+.breadcrumb { color: var(--muted); font-size: 12px; }
+.breadcrumb strong { color: var(--text); font-weight: 700; }
+.top-actions { display: flex; align-items: center; gap: 12px; }
+.clock { color: var(--muted); font: 11px Consolas, monospace; }
+.top-indicator {
+    display: flex; align-items: center; gap: 7px;
+    color: var(--muted); font-size: 10px; letter-spacing: .06em;
 }
-
-.topbar-right {
-    display: flex;
-    align-items: center;
-    gap: 14px;
+.top-indicator .engine-led { width: 6px; height: 6px; }
+.icon-button {
+    width: 34px; height: 34px;
+    border: 1px solid var(--line); border-radius: 9px;
+    color: var(--muted); background: rgba(255,255,255,.025);
 }
-
-.clock {
-    color: var(--muted);
-    font-size: 12px;
-    font-variant-numeric: tabular-nums;
+.icon-button:hover { color: white; border-color: var(--line-hot); }
+.page { width: min(1280px, 100%); margin: auto; padding: 30px 30px 54px; }
+.view { display: none; }
+.view.active { display: block; animation: appear .24s ease-out; }
+@keyframes appear { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: none; } }
+.eyebrow {
+    color: var(--red-hot); font-size: 9px; font-weight: 900;
+    letter-spacing: .2em; text-transform: uppercase;
 }
-
-.avatar {
-    width: 34px;
-    height: 34px;
-    display: grid;
-    place-items: center;
-    border-radius: 50%;
-    color: white;
-    font-weight: 900;
-    background: linear-gradient(135deg, var(--purple), var(--pink));
+.section-heading {
+    display: flex; align-items: end; justify-content: space-between;
+    gap: 16px; margin: 0 0 18px;
 }
-
-.page {
-    width: min(1220px, 100%);
-    margin: auto;
-    padding: 34px 32px 55px;
+.page-title {
+    margin: 7px 0 0;
+    font-size: clamp(29px, 4vw, 43px);
+    line-height: 1;
+    letter-spacing: -.04em;
 }
-
-.view {
-    display: none;
-}
-
-.view.active {
-    display: block;
-    animation: fadeIn .25s ease;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.surface {
+.muted { color: var(--muted); }
+.panel {
     border: 1px solid var(--line);
-    border-radius: 20px;
+    border-radius: var(--radius);
     background: var(--panel);
-    backdrop-filter: blur(14px);
+    box-shadow: 0 14px 40px rgba(0,0,0,.2);
+    backdrop-filter: blur(13px);
 }
-
 .hero {
     position: relative;
-    min-height: 280px;
+    min-height: 278px;
+    display: flex;
+    align-items: center;
     overflow: hidden;
-    padding: 44px;
+    padding: 38px;
     background:
-        linear-gradient(100deg, rgba(168,137,255,.16), transparent 60%),
-        var(--panel);
+        linear-gradient(100deg, rgba(23,9,12,.98) 0%, rgba(19,10,12,.9) 54%, rgba(34,7,13,.72) 100%);
 }
-
+.hero::before {
+    content: "";
+    position: absolute;
+    top: 0; right: 0; bottom: 0;
+    width: 42%;
+    opacity: .58;
+    background:
+        linear-gradient(135deg, transparent 0 43%, rgba(255,38,61,.07) 43% 44%, transparent 44%),
+        repeating-linear-gradient(135deg, transparent 0 19px, rgba(255,38,61,.05) 20px 21px);
+    mask-image: linear-gradient(90deg, transparent, black);
+}
 .hero::after {
     content: "";
     position: absolute;
-    width: 330px;
-    height: 330px;
-    top: -170px;
-    right: -80px;
+    top: -150px; right: 4%;
+    width: 310px; height: 310px;
+    border: 1px solid rgba(255,49,67,.28);
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--purple), var(--cyan));
-    filter: blur(55px);
-    opacity: .23;
+    box-shadow: 0 0 0 24px rgba(255,49,67,.025), 0 0 0 50px rgba(255,49,67,.02);
 }
-
-.eyebrow {
-    color: var(--cyan);
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: .2em;
-}
-
-.hero h1,
-.page-title {
-    margin: 17px 0 13px;
-    font-size: clamp(38px, 5vw, 68px);
-    line-height: .96;
-    letter-spacing: -.05em;
-}
-
-.hero p {
-    max-width: 550px;
-    color: var(--muted);
-    line-height: 1.6;
-}
-
-.actions,
-.toolbar {
-    display: flex;
-    gap: 10px;
-    margin-top: 24px;
-}
-
-.primary,
-.secondary {
-    min-height: 44px;
-    border-radius: 12px;
-    padding: 0 16px;
-    font-weight: 800;
-}
-
-.primary {
-    border: 0;
-    color: #10111a;
-    background: linear-gradient(135deg, var(--purple), var(--cyan));
-}
-
-.secondary {
-    border: 1px solid var(--line);
-    color: var(--text);
-    background: rgba(255,255,255,.06);
-}
-
-.stat-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    margin-top: 16px;
-}
-
-.stat {
-    padding: 19px;
-}
-
-.stat strong {
-    display: block;
-    font-size: 26px;
-}
-
-.stat span,
-.muted {
-    color: var(--muted);
-    font-size: 12px;
-}
-
-.page-title {
-    font-size: 42px;
-}
-
-.search {
-    width: 100%;
-    min-height: 46px;
-    border: 1px solid var(--line);
-    border-radius: 12px;
+.hero-content { position: relative; z-index: 1; max-width: 650px; }
+.hero h1 { margin: 14px 0 12px; font-size: clamp(42px, 6vw, 72px); line-height: .9; letter-spacing: -.06em; }
+.hero h1 span { color: var(--red); text-shadow: 0 0 30px rgba(255,38,61,.28); }
+.hero p { max-width: 520px; color: #b6a8aa; font-size: 13px; line-height: 1.7; }
+.button-row { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 22px; }
+.btn {
+    min-height: 40px;
     padding: 0 14px;
-    outline: none;
-    color: var(--text);
-    background: rgba(255,255,255,.045);
+    border: 1px solid var(--line-hot);
+    border-radius: 9px;
+    color: white;
+    background: rgba(255,38,61,.08);
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: .08em;
+    transition: .18s ease;
 }
-
-.search:focus {
-    border-color: var(--purple);
+.btn:hover { border-color: var(--red-hot); background: rgba(255,38,61,.16); transform: translateY(-1px); }
+.btn.primary {
+    border-color: var(--red);
+    background: linear-gradient(135deg, #ee1e35, #a90d22);
+    box-shadow: 0 6px 20px rgba(255,38,61,.2);
 }
-
-.games-grid {
+.btn.quiet { color: var(--muted); border-color: var(--line); background: rgba(255,255,255,.025); }
+.btn.small { min-height: 31px; padding: 0 9px; font-size: 9px; }
+.metrics {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(235px, 1fr));
-    gap: 14px;
-    margin-top: 16px;
+    grid-template-columns: repeat(4, minmax(0,1fr));
+    gap: 12px;
+    margin-top: 14px;
 }
-
+.metric { position: relative; padding: 16px; overflow: hidden; }
+.metric::after {
+    content: ""; position: absolute; top: 0; left: 16px; width: 28px; height: 2px;
+    background: var(--red); box-shadow: 0 0 10px var(--red);
+}
+.metric-label { color: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: .12em; }
+.metric-value { margin-top: 8px; font-size: 25px; font-weight: 800; }
+.metric-note { margin-top: 3px; color: #806f71; font-size: 10px; }
+.home-columns {
+    display: grid; grid-template-columns: minmax(0,1.4fr) minmax(260px,.8fr);
+    gap: 14px; margin-top: 14px;
+}
+.block { padding: 18px; }
+.block-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.block-heading h2 { margin: 0; font-size: 13px; letter-spacing: .02em; }
+.text-link { border: 0; color: var(--red-hot); background: none; font-size: 10px; font-weight: 800; }
+.recent-list { display: grid; gap: 8px; }
+.recent-item, .port-item {
+    display: flex; align-items: center; gap: 12px; min-width: 0;
+    padding: 10px; border: 1px solid rgba(255,255,255,.045); border-radius: 10px;
+    background: rgba(255,255,255,.018);
+}
+.game-symbol {
+    width: 35px; height: 35px; flex: none; display: grid; place-items: center;
+    border: 1px solid var(--line); border-radius: 9px; color: var(--red-hot);
+    background: rgba(255,38,61,.07); font-size: 11px; font-weight: 900;
+}
+.recent-copy { min-width: 0; flex: 1; }
+.recent-copy strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
+.recent-copy span { display: block; margin-top: 4px; color: var(--muted); font-size: 9px; }
+.quote-text { color: #e8dfe0; font-size: 15px; line-height: 1.6; }
+.quote-author { margin-top: 12px; color: var(--gold); font-size: 9px; font-weight: 900; letter-spacing: .15em; }
+.quote-mark { color: var(--red); font-size: 27px; line-height: 1; }
+.toolbar { display: flex; gap: 9px; margin: 18px 0 14px; }
+.search-wrap { position: relative; flex: 1; }
+.search-icon { position: absolute; top: 12px; left: 13px; color: #806f71; font-size: 13px; }
+.search, .select {
+    width: 100%; height: 40px;
+    border: 1px solid var(--line); border-radius: 9px;
+    color: var(--text); background: rgba(255,255,255,.035);
+}
+.search { padding: 0 12px 0 35px; }
+.search::placeholder { color: #786d6e; }
+.select { width: auto; min-width: 125px; padding: 0 10px; }
+.game-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(215px,1fr)); gap: 12px; }
 .game-card {
-    padding: 17px;
+    position: relative; min-width: 0; overflow: hidden; padding: 15px;
     transition: .2s ease;
 }
-
-.game-card:hover {
-    transform: translateY(-4px);
-    border-color: rgba(168,137,255,.5);
+.game-card:hover { transform: translateY(-3px); border-color: var(--line-hot); box-shadow: var(--glow); }
+.game-card::before {
+    content: ""; position: absolute; top: 0; left: 0; width: 34px; height: 1px;
+    background: var(--red); box-shadow: 0 0 10px var(--red);
 }
-
-.game-card-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.game-number {
-    color: var(--purple);
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: .15em;
-}
-
+.game-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.game-number { color: var(--red-hot); font: 10px Consolas,monospace; letter-spacing: .08em; }
 .favorite {
-    border: 0;
-    color: var(--muted);
-    background: transparent;
-    font-size: 19px;
+    width: 28px; height: 28px; border: 1px solid transparent; border-radius: 7px;
+    color: #8c7c7e; background: transparent; font-size: 17px;
 }
-
-.favorite.active {
-    color: var(--pink);
-}
-
+.favorite:hover, .favorite.on { color: var(--red-hot); border-color: var(--line); background: rgba(255,38,61,.07); }
 .game-card h3 {
-    min-height: 44px;
-    margin: 16px 0 10px;
-    font-size: 17px;
+    min-height: 38px; margin: 13px 0 10px; overflow-wrap: anywhere;
+    font-size: 14px; line-height: 1.35;
 }
-
-.game-meta {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 13px;
-    color: var(--muted);
+.game-meta { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); font-size: 9px; }
+.cache-tag { color: var(--green); font-weight: 800; }
+.game-card .launch-button { width: 100%; margin-top: 14px; }
+.loader { display: none; margin: 14px 0; padding: 14px; }
+.loader.active { display: block; }
+.loader-top, .loader-bottom { display: flex; justify-content: space-between; gap: 10px; font-size: 10px; }
+.loader-top { margin-bottom: 9px; }
+.loader-bottom { margin-top: 8px; color: var(--muted); }
+.track { height: 7px; overflow: hidden; border-radius: 8px; background: rgba(255,255,255,.08); }
+.fill { width: 0; height: 100%; background: linear-gradient(90deg,var(--red-dim),var(--red-hot)); box-shadow: 0 0 12px rgba(255,38,61,.5); transition: width .16s; }
+.empty { padding: 38px 20px; color: var(--muted); text-align: center; }
+.stats-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+.table-wrap { overflow-x: auto; }
+.table { width: 100%; border-collapse: collapse; }
+.table th, .table td { padding: 11px 9px; border-bottom: 1px solid var(--line); text-align: left; font-size: 10px; }
+.table th { color: #8d7b7d; font-size: 8px; letter-spacing: .12em; }
+.table tr:last-child td { border-bottom: 0; }
+.setting-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 18px;
+    padding: 14px 0; border-bottom: 1px solid var(--line);
+}
+.setting-row:last-child { border-bottom: 0; }
+.setting-row strong { display: block; font-size: 11px; }
+.setting-row span { display: block; margin-top: 4px; color: var(--muted); font-size: 10px; }
+.switch { accent-color: var(--red); width: 17px; height: 17px; }
+.toast {
+    position: fixed; right: 18px; bottom: 18px; z-index: 30;
+    max-width: min(390px,calc(100vw - 36px)); padding: 12px 14px;
+    border: 1px solid var(--line-hot); border-radius: 10px;
+    background: #180c0e; box-shadow: 0 12px 34px rgba(0,0,0,.5);
     font-size: 11px;
 }
-
-.launch-button {
-    width: 100%;
-    height: 42px;
-    border: 0;
-    border-radius: 11px;
-    color: #10111a;
-    font-weight: 800;
-    background: linear-gradient(135deg, var(--purple), var(--cyan));
-}
-
-.loader {
-    display: none;
-    margin: 17px 0;
-    padding: 17px;
-}
-
-.loader.active {
-    display: block;
-}
-
-.loader-head,
-.loader-foot {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    color: var(--muted);
-    font-size: 12px;
-}
-
-.loader-head {
-    margin-bottom: 11px;
-    color: var(--text);
-    font-weight: 700;
-}
-
-.progress-track {
-    height: 9px;
-    overflow: hidden;
-    border-radius: 999px;
-    background: rgba(255,255,255,.08);
-}
-
-.progress-fill {
-    width: 0%;
-    height: 100%;
-    transition: width .15s ease;
-    background: linear-gradient(90deg, var(--purple), var(--cyan));
-}
-
-.table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.table th,
-.table td {
-    padding: 13px;
-    border-bottom: 1px solid var(--line);
-    text-align: left;
-    font-size: 13px;
-}
-
-.table th {
-    color: var(--muted);
-    font-size: 10px;
-    letter-spacing: .12em;
-    text-transform: uppercase;
-}
-
-.info-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 13px;
-}
-
-.info {
-    padding: 19px;
-}
-
-.info strong {
-    display: block;
-    margin-top: 7px;
-    font-size: 18px;
-}
-
-.empty {
-    padding: 48px 20px;
-    color: var(--muted);
-    text-align: center;
-}
-
-.toast {
-    position: fixed;
-    right: 20px;
-    bottom: 20px;
-    z-index: 100;
-    max-width: 340px;
-    padding: 13px 15px;
-    border: 1px solid var(--line);
-    border-radius: 12px;
-    background: var(--panel-2);
-    box-shadow: 0 14px 40px rgba(0,0,0,.4);
-}
-
-@media (max-width: 850px) {
-    .sidebar { width: 78px; }
-    .brand-name,
-    .nav-label,
-    .nav button span:last-child,
-    .sidebar-status { display: none; }
-    .nav button { justify-content: center; }
-    .page { padding: 24px 18px 45px; }
+[hidden] { display: none !important; }
+@media(max-width:900px) {
+    .sidebar { width: 70px; padding: 16px 9px; }
+    .brand { justify-content: center; padding: 5px 0 24px; }
+    .brand-name,.nav-label,.nav button .nav-text,.nav-count,.sidebar-bottom { display: none; }
+    .nav button { justify-content: center; padding: 0; }
+    .home-columns { grid-template-columns: 1fr; }
+    .page { padding: 24px 18px 44px; }
     .topbar { padding: 0 18px; }
 }
-
-@media (max-width: 560px) {
+@media(max-width:600px) {
     .app { display: block; }
     .sidebar {
-        position: fixed;
-        right: 0;
-        bottom: 0;
-        left: 0;
-        z-index: 50;
-        width: 100%;
-        height: 66px;
-        padding: 8px 12px;
-        border-top: 1px solid var(--line);
-        border-right: 0;
+        position: fixed; right: 0; bottom: 0; left: 0; z-index: 20;
+        width: 100%; height: 62px; padding: 5px 8px;
+        border-top: 1px solid var(--line); border-right: 0;
     }
-    .nav {
-        width: 100%;
-        grid-template-columns: repeat(3, 1fr);
-    }
-    .nav button { height: 50px; }
-    .main { padding-bottom: 66px; }
-    .topbar { height: 58px; }
-    .hero { padding: 28px; }
-    .hero h1 { font-size: 40px; }
-    .actions,
-    .toolbar { flex-direction: column; }
-    .stat-grid,
-    .info-grid { grid-template-columns: 1fr; }
-    .games-grid { grid-template-columns: 1fr; }
+    .brand,.nav-label,.sidebar-bottom { display: none; }
+    .nav { width: 100%; grid-template-columns: repeat(5,1fr); gap: 3px; }
+    .nav button { min-height: 50px; border-radius: 8px; }
+    .nav-icon { width: auto; font-size: 15px; }
+    .nav button .nav-text { display: block; font-size: 8px; }
+    .nav button { flex-direction: column; justify-content: center; gap: 2px; }
+    .main { height: 100vh; padding-bottom: 62px; }
+    .topbar { height: 54px; padding: 0 13px; }
+    .top-indicator { display: none; }
+    .page { padding: 20px 13px 82px; }
+    .hero { min-height: 270px; padding: 25px 20px; }
+    .hero::after { right: -190px; }
+    .hero h1 { font-size: 48px; }
+    .metrics { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+    .metric { padding: 13px; }
+    .metric-value { font-size: 21px; }
+    .toolbar { flex-wrap: wrap; }
+    .search-wrap { flex-basis: 100%; }
+    .select { flex: 1; }
+    .game-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+    .game-card { padding: 12px; }
+    .game-card h3 { font-size: 12px; }
+    .stats-grid { grid-template-columns: 1fr; }
+}
+@media(max-width:380px) {
+    .game-grid { grid-template-columns: 1fr; }
+    .clock { display: none; }
+}
+@media(prefers-reduced-motion:reduce) {
+    *,*::before,*::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
 </style>
 </head>
 <body>
-<div class="background"></div>
-<canvas id="particles"></canvas>
+<div class="backdrop"></div>
+<canvas id="fx-canvas" aria-hidden="true"></canvas>
+<div class="scanlines"></div>
 
 <div class="app">
     <aside class="sidebar">
         <div class="brand">
             <div class="brand-mark">X</div>
-            <div class="brand-name">
-                CODEX
-                <span class="brand-sub">RETURNS ARCADE</span>
-            </div>
+            <div class="brand-name">CODEX-RETURNS<span class="brand-sub">ARCADE CONSOLE</span></div>
         </div>
 
-        <div class="nav-label">NAVIGATION</div>
-
-        <nav class="nav">
-            <button class="active" data-view="home">
-                <span class="nav-icon">⌂</span>
-                <span>Home</span>
-            </button>
-            <button data-view="games">
-                <span class="nav-icon">▦</span>
-                <span>Games</span>
-            </button>
-            <button data-view="stats">
-                <span class="nav-icon">◒</span>
-                <span>Stats</span>
-            </button>
+        <div class="nav-label">CONSOLE</div>
+        <nav class="nav" aria-label="Main navigation">
+            <button class="active" data-view="home"><span class="nav-icon">⌂</span><span class="nav-text">Home</span></button>
+            <button data-view="games"><span class="nav-icon">▦</span><span class="nav-text">Library</span><span id="nav-game-count" class="nav-count">0</span></button>
+            <button data-view="favorites"><span class="nav-icon">★</span><span class="nav-text">Favorites</span><span id="nav-fav-count" class="nav-count">0</span></button>
+            <button data-view="stats"><span class="nav-icon">◒</span><span class="nav-text">Stats</span></button>
+            <button data-view="settings"><span class="nav-icon">⚙</span><span class="nav-text">Settings</span></button>
         </nav>
 
-        <div class="sidebar-status">
-            <i></i>
-            <span>LOCAL ENGINE ONLINE</span>
+        <div class="sidebar-bottom">
+            <div class="engine-card">
+                <div class="engine-top"><i class="engine-led"></i><strong>LOCAL ENGINE</strong></div>
+                <div class="engine-detail">Ready · 127.0.0.1</div>
+            </div>
         </div>
     </aside>
 
     <section class="main">
         <header class="topbar">
-            <div id="topbar-title" class="topbar-title">Welcome back</div>
-            <div class="topbar-right">
-                <span id="clock" class="clock">00:00:00</span>
-                <span id="battery" class="clock">Battery --</span>
-                <span class="avatar">X</span>
+            <div class="breadcrumb">CODEX <span style="color:#60494c">/</span> <strong id="crumb">HOME</strong></div>
+            <div class="top-actions">
+                <span class="top-indicator"><i class="engine-led"></i> SYSTEM ONLINE</span>
+                <span id="clock" class="clock">--:--:--</span>
+                <button class="icon-button" title="Sync library" aria-label="Sync library" onclick="syncGames()">↻</button>
             </div>
         </header>
 
         <main class="page">
             <section id="view-home" class="view active">
-                <div class="hero surface">
-                    <div class="eyebrow">NO LOGIN · LOCALHOST ARCADE</div>
-                    <h1>Play something<br>different.</h1>
-                    <p>
-                        Browse your connected game library, cache games locally,
-                        and launch them instantly through the local engine.
-                    </p>
-                    <div class="actions">
-                        <button class="primary" onclick="showView('games')">
-                            BROWSE GAMES
-                        </button>
-                        <button class="secondary" onclick="syncGames()">
-                            SYNC LIBRARY
-                        </button>
+                <div class="hero panel">
+                    <div class="hero-content">
+                        <div class="eyebrow">ALI'S PRODUCTIONS PRESENTS</div>
+                        <h1>CODEX<br><span>RETURNS.</span></h1>
+                        <p>Your local arcade, ready when you are. Browse the library, pick a game, and launch it through your own localhost game engine.</p>
+                        <div class="button-row">
+                            <button class="btn primary" onclick="showView('games')">▸ &nbsp; EXPLORE LIBRARY</button>
+                            <button class="btn" onclick="syncGames()">↻ &nbsp; SYNC REPOSITORY</button>
+                        </div>
                     </div>
                 </div>
 
-                <div class="stat-grid">
-                    <div class="surface stat">
-                        <strong id="home-game-count">0</strong>
-                        <span>Games available</span>
-                    </div>
-                    <div class="surface stat">
-                        <strong id="home-favorite-count">0</strong>
-                        <span>Favorites</span>
-                    </div>
-                    <div class="surface stat">
-                        <strong id="home-port-count">0</strong>
-                        <span>Active ports</span>
-                    </div>
+                <div class="metrics">
+                    <div class="panel metric"><div class="metric-label">AVAILABLE GAMES</div><div id="home-games" class="metric-value">0</div><div class="metric-note">in your library</div></div>
+                    <div class="panel metric"><div class="metric-label">CACHED LOCALLY</div><div id="home-cached" class="metric-value">0</div><div class="metric-note">ready for relaunch</div></div>
+                    <div class="panel metric"><div class="metric-label">FAVORITES</div><div id="home-favorites" class="metric-value">0</div><div class="metric-note">your pinned games</div></div>
+                    <div class="panel metric"><div class="metric-label">ACTIVE PORTS</div><div id="home-ports" class="metric-value">0</div><div class="metric-note">local game servers</div></div>
                 </div>
 
-                <div class="surface" style="margin-top:16px;padding:20px">
-                    <div class="muted">CURRENT QUOTE</div>
-                    <h3 id="quote-text">Loading quote...</h3>
-                    <div id="quote-author" class="muted"></div>
-                    <button class="secondary" style="margin-top:14px" onclick="nextQuote()">
-                        NEXT QUOTE
-                    </button>
+                <div class="home-columns">
+                    <section class="panel block">
+                        <div class="block-heading"><h2>RECENTLY PLAYED</h2><button class="text-link" onclick="showView('games')">ALL GAMES →</button></div>
+                        <div id="recent-list" class="recent-list"></div>
+                    </section>
+                    <section class="panel block">
+                        <div class="block-heading"><h2>TRANSMISSION</h2><button class="text-link" onclick="nextQuote()">NEXT ↻</button></div>
+                        <div class="quote-mark">“</div>
+                        <div id="quote-text" class="quote-text">Loading transmission...</div>
+                        <div id="quote-author" class="quote-author">CODEX</div>
+                    </section>
                 </div>
             </section>
 
             <section id="view-games" class="view">
-                <div class="eyebrow">LIBRARY</div>
-                <h1 class="page-title">Your games</h1>
-
+                <div class="section-heading">
+                    <div><div class="eyebrow">THE ARCADE</div><h1 class="page-title">Game library</h1></div>
+                    <button class="btn" onclick="syncGames()">↻ &nbsp; SYNC</button>
+                </div>
                 <div class="toolbar">
-                    <input
-                        id="search"
-                        class="search"
-                        placeholder="Search by game name or number..."
-                        oninput="renderGames()"
-                    >
-                    <button class="secondary" onclick="syncGames()">SYNC</button>
+                    <div class="search-wrap"><span class="search-icon">⌕</span><input id="game-search" class="search" placeholder="Search games by name or number..." oninput="renderGames()"></div>
+                    <select id="game-sort" class="select" onchange="renderGames()">
+                        <option value="number">Sort: game number</option>
+                        <option value="name">Sort: name</option>
+                        <option value="cached">Sort: cached first</option>
+                    </select>
+                    <button id="favorite-filter" class="btn quiet" onclick="toggleFavoriteFilter()">☆ FAVORITES</button>
                 </div>
-
-                <div id="loader" class="surface loader">
-                    <div class="loader-head">
-                        <span id="loader-stage">Preparing game...</span>
-                        <span id="loader-percent">0%</span>
-                    </div>
-                    <div class="progress-track">
-                        <div id="loader-fill" class="progress-fill"></div>
-                    </div>
-                    <div class="loader-foot" style="margin-top:10px">
-                        <span id="loader-detail">Waiting...</span>
-                        <span id="loader-files">0 / 0</span>
-                    </div>
+                <div id="loader" class="panel loader">
+                    <div class="loader-top"><strong id="loader-stage">Preparing...</strong><span id="loader-percent">0%</span></div>
+                    <div class="track"><div id="loader-fill" class="fill"></div></div>
+                    <div class="loader-bottom"><span id="loader-detail">Waiting for engine...</span><span id="loader-files">0 / 0</span></div>
                 </div>
+                <div id="games-grid" class="game-grid"></div>
+            </section>
 
-                <div id="games-grid" class="games-grid"></div>
+            <section id="view-favorites" class="view">
+                <div class="section-heading"><div><div class="eyebrow">YOUR SHORTLIST</div><h1 class="page-title">Favorites</h1></div></div>
+                <div id="favorites-grid" class="game-grid"></div>
             </section>
 
             <section id="view-stats" class="view">
-                <div class="eyebrow">OVERVIEW</div>
-                <h1 class="page-title">Your stats</h1>
-
-                <div class="info-grid">
-                    <div class="surface info">
-                        <div class="muted">TOTAL GAMES</div>
-                        <strong id="stats-games">0</strong>
-                    </div>
-                    <div class="surface info">
-                        <div class="muted">CACHED GAMES</div>
-                        <strong id="stats-cached">0</strong>
-                    </div>
-                    <div class="surface info">
-                        <div class="muted">FAVORITES</div>
-                        <strong id="stats-favorites">0</strong>
-                    </div>
-                    <div class="surface info">
-                        <div class="muted">ACTIVE PORTS</div>
-                        <strong id="stats-ports">0</strong>
-                    </div>
+                <div class="section-heading"><div><div class="eyebrow">SYSTEM OVERVIEW</div><h1 class="page-title">Arcade stats</h1></div></div>
+                <div class="stats-grid">
+                    <div class="panel block"><div class="eyebrow">LIBRARY</div><div id="stats-library" class="metric-value">0</div><div class="muted">games indexed</div></div>
+                    <div class="panel block"><div class="eyebrow">LOCAL CACHE</div><div id="stats-cache" class="metric-value">0</div><div class="muted">games with index.html cached</div></div>
+                    <div class="panel block"><div class="eyebrow">FAVORITES</div><div id="stats-favs" class="metric-value">0</div><div class="muted">saved on this device</div></div>
+                    <div class="panel block"><div class="eyebrow">ACTIVE SERVERS</div><div id="stats-ports" class="metric-value">0</div><div class="muted">localhost game ports</div></div>
                 </div>
+                <section class="panel block" style="margin-top:14px">
+                    <div class="block-heading"><h2>ACTIVE GAME PORTS</h2></div>
+                    <div class="table-wrap">
+                        <table class="table"><thead><tr><th>Game</th><th>Address</th><th>Action</th></tr></thead><tbody id="ports-table"></tbody></table>
+                    </div>
+                </section>
+            </section>
 
-                <div class="surface" style="margin-top:16px;padding:20px">
-                    <h3>Active game ports</h3>
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Game</th>
-                                <th>Port</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="ports-table"></tbody>
-                    </table>
+            <section id="view-settings" class="view">
+                <div class="section-heading"><div><div class="eyebrow">PREFERENCES</div><h1 class="page-title">Settings</h1></div></div>
+                <div class="panel block">
+                    <div class="block-heading"><h2>VISUALS & INTERACTION</h2></div>
+                    <div class="setting-row"><div><strong>Interactive background</strong><span>Particles react to pointer movement and clicks.</span></div><input id="setting-particles" class="switch" type="checkbox" checked></div>
+                    <div class="setting-row"><div><strong>Reduced motion</strong><span>Disable motion effects for a calmer interface.</span></div><input id="setting-motion" class="switch" type="checkbox"></div>
+                    <div class="setting-row"><div><strong>Background intensity</strong><span>Adjust particle density and glow.</span></div><input id="setting-intensity" type="range" min="0" max="100" value="65"></div>
+                </div>
+                <div class="panel block" style="margin-top:14px">
+                    <div class="block-heading"><h2>LOCAL INSTALLATION</h2></div>
+                    <div class="setting-row"><div><strong>Cache directory</strong><span>Downloaded game files are stored locally.</span></div><code>.cache/games/</code></div>
+                    <div class="setting-row"><div><strong>Sign-in</strong><span>This launcher does not require an account.</span></div><strong style="color:var(--green)">NOT REQUIRED</strong></div>
                 </div>
             </section>
         </main>
@@ -1810,269 +1654,221 @@ button:disabled {
 <div id="toast" class="toast" hidden></div>
 
 <script>
-let games = [];
-let ports = [];
-let favorites = new Set(
-    JSON.parse(localStorage.getItem("codex-favorites") || "[]")
-);
-let busy = false;
-let progressTimer = null;
+"use strict";
 
 const $ = id => document.getElementById(id);
+let games = [];
+let ports = [];
+let busy = false;
+let progressTimer = null;
+let favorites = new Set(readStored("codex-favorites", []).map(String));
+let recent = readStored("codex-recent", []).map(Number).filter(Number.isFinite);
+let favoritesOnly = false;
+let quoteIndex = 0;
 
-function showToast(message) {
-    const toast = $("toast");
-    toast.textContent = message;
-    toast.hidden = false;
-    clearTimeout(showToast.timer);
-    showToast.timer = setTimeout(() => {
-        toast.hidden = true;
-    }, 3000);
+function readStored(key, fallback) {
+    try {
+        const value = JSON.parse(localStorage.getItem(key));
+        return Array.isArray(value) ? value : fallback;
+    } catch (_) {
+        return fallback;
+    }
 }
-
+function store(key, value) {
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch (_) {}
+}
+function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, char => ({
+        "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"
+    })[char]);
+}
+function toast(message) {
+    const node = $("toast");
+    node.textContent = message;
+    node.hidden = false;
+    clearTimeout(toast.timer);
+    toast.timer = setTimeout(() => { node.hidden = true; }, 3200);
+}
 function showView(name) {
     document.querySelectorAll(".view").forEach(view => {
         view.classList.toggle("active", view.id === `view-${name}`);
     });
-
     document.querySelectorAll(".nav button").forEach(button => {
         button.classList.toggle("active", button.dataset.view === name);
     });
-
-    $("topbar-title").textContent =
-        name === "home" ? "Welcome back" :
-        name === "games" ? "Game library" :
-        "Launcher stats";
-
+    $("crumb").textContent = name.toUpperCase();
+    if (name === "favorites") renderFavorites();
     if (name === "stats") renderStats();
+    if (name === "home") renderHome();
 }
-
 document.querySelectorAll(".nav button").forEach(button => {
     button.addEventListener("click", () => showView(button.dataset.view));
 });
 
 function updateClock() {
     $("clock").textContent = new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit"
+        hour: "2-digit", minute: "2-digit", second: "2-digit"
     });
 }
-
-setInterval(updateClock, 1000);
 updateClock();
+setInterval(updateClock, 1000);
 
-if (navigator.getBattery) {
-    navigator.getBattery().then(battery => {
-        const updateBattery = () => {
-            $("battery").textContent =
-                `Battery ${Math.round(battery.level * 100)}%`;
-        };
-        updateBattery();
-        battery.addEventListener("levelchange", updateBattery);
-    });
+function gameCard(game) {
+    const key = String(game.num);
+    const isFavorite = favorites.has(key);
+    return `<article class="panel game-card">
+        <div class="game-top">
+            <span class="game-number">GAME // ${Number(game.num)}</span>
+            <button class="favorite ${isFavorite ? "on" : ""}" aria-label="Toggle favorite"
+                onclick="toggleFavorite(${Number(game.num)})">${isFavorite ? "★" : "☆"}</button>
+        </div>
+        <h3>${escapeHtml(game.name)}</h3>
+        <div class="game-meta">
+            <span>${Number(game.file_count || 0)} files · ${escapeHtml(game.size_formatted || "0 B")}</span>
+            <span class="${game.cached ? "cache-tag" : ""}">${game.cached ? "CACHED" : "REMOTE"}</span>
+        </div>
+        <button class="btn primary launch-button" onclick="launchGame(${Number(game.num)})" ${busy ? "disabled" : ""}>▶ &nbsp; LAUNCH GAME</button>
+    </article>`;
 }
-
-function saveFavorites() {
-    localStorage.setItem(
-        "codex-favorites",
-        JSON.stringify([...favorites])
-    );
-}
-
-function escapeHtml(value) {
-    return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-}
-
-function updateCounters() {
-    const cached = games.filter(game => game.cached).length;
-    const favoriteCount = games.filter(game =>
-        favorites.has(String(game.num))
-    ).length;
-
-    $("home-game-count").textContent = games.length;
-    $("home-favorite-count").textContent = favoriteCount;
-    $("home-port-count").textContent = ports.length;
-
-    $("stats-games").textContent = games.length;
-    $("stats-cached").textContent = cached;
-    $("stats-favorites").textContent = favoriteCount;
-    $("stats-ports").textContent = ports.length;
-}
-
 function renderGames() {
-    const query = $("search").value.trim().toLowerCase();
-
-    const filtered = games.filter(game =>
-        !query ||
-        game.name.toLowerCase().includes(query) ||
-        String(game.num) === query
+    const query = $("game-search").value.trim().toLowerCase();
+    const sort = $("game-sort").value;
+    let list = games.filter(game =>
+        (!query || game.name.toLowerCase().includes(query) || String(game.num) === query) &&
+        (!favoritesOnly || favorites.has(String(game.num)))
     );
+    if (sort === "name") list.sort((a,b) => a.name.localeCompare(b.name));
+    if (sort === "cached") list.sort((a,b) => Number(b.cached) - Number(a.cached));
+    if (sort === "number") list.sort((a,b) => a.num - b.num);
 
-    if (!filtered.length) {
-        $("games-grid").innerHTML =
-            '<div class="surface empty">No games found.</div>';
-        updateCounters();
-        return;
-    }
-
-    $("games-grid").innerHTML = filtered.map(game => {
-        const isFavorite = favorites.has(String(game.num));
-
-        return `
-            <article class="surface game-card">
-                <div class="game-card-top">
-                    <span class="game-number">GAME #${game.num}</span>
-                    <button
-                        class="favorite ${isFavorite ? "active" : ""}"
-                        onclick="toggleFavorite(${game.num})"
-                        title="Favorite game"
-                    >${isFavorite ? "★" : "☆"}</button>
-                </div>
-                <h3>${escapeHtml(game.name)}</h3>
-                <div class="game-meta">
-                    <span>${game.file_count || 0} files</span>
-                    <span>${escapeHtml(game.size_formatted || "0 B")}</span>
-                </div>
-                <button
-                    class="launch-button"
-                    onclick="launchGame(${game.num})"
-                    ${busy ? "disabled" : ""}
-                >LAUNCH</button>
-            </article>
-        `;
-    }).join("");
-
-    updateCounters();
+    $("games-grid").innerHTML = list.length
+        ? list.map(gameCard).join("")
+        : `<div class="panel empty">${games.length ? "No games match this filter." : "Your library is empty. Sync the repository to load games."}</div>`;
+    updateCounts();
 }
-
+function renderFavorites() {
+    const list = games.filter(game => favorites.has(String(game.num)));
+    $("favorites-grid").innerHTML = list.length
+        ? list.map(gameCard).join("")
+        : `<div class="panel empty">No favorites yet. Tap the star on a game to pin it here.</div>`;
+}
 function toggleFavorite(number) {
     const key = String(number);
-    if (favorites.has(key)) favorites.delete(key);
-    else favorites.add(key);
-    saveFavorites();
+    if (favorites.has(key)) favorites.delete(key); else favorites.add(key);
+    store("codex-favorites", [...favorites]);
     renderGames();
+    renderFavorites();
+    renderHome();
     renderStats();
 }
-
+function toggleFavoriteFilter() {
+    favoritesOnly = !favoritesOnly;
+    $("favorite-filter").classList.toggle("primary", favoritesOnly);
+    $("favorite-filter").textContent = favoritesOnly ? "★ FAVORITES ON" : "☆ FAVORITES";
+    renderGames();
+}
+function updateCounts() {
+    const cached = games.filter(game => game.cached).length;
+    $("home-games").textContent = games.length;
+    $("home-cached").textContent = cached;
+    $("home-favorites").textContent = favorites.size;
+    $("home-ports").textContent = ports.length;
+    $("nav-game-count").textContent = games.length;
+    $("nav-fav-count").textContent = favorites.size;
+}
+function renderHome() {
+    updateCounts();
+    const played = recent.map(number => games.find(game => game.num === number)).filter(Boolean).slice(0,4);
+    $("recent-list").innerHTML = played.length ? played.map(game => `
+        <div class="recent-item">
+            <div class="game-symbol">#${game.num}</div>
+            <div class="recent-copy"><strong>${escapeHtml(game.name)}</strong><span>${game.cached ? "Cached locally" : "Ready to fetch"} · Port ${game.port}</span></div>
+            <button class="btn small" onclick="launchGame(${game.num})">PLAY</button>
+        </div>`).join("") : `<div class="empty">Your recently played games will appear here.</div>`;
+}
 function renderStats() {
-    updateCounters();
-
-    $("ports-table").innerHTML = ports.length
-        ? ports.map(port => `
-            <tr>
-                <td>#${port.num} ${escapeHtml(port.name)}</td>
-                <td>${port.port}</td>
-                <td>
-                    <button
-                        class="secondary"
-                        onclick="openPort('${escapeHtml(port.url)}')"
-                    >OPEN</button>
-                    <button
-                        class="secondary"
-                        onclick="stopPort(${port.port})"
-                    >STOP</button>
-                </td>
-            </tr>
-        `).join("")
-        : '<tr><td colspan="3" class="muted">No active ports.</td></tr>';
+    $("stats-library").textContent = games.length;
+    $("stats-cache").textContent = games.filter(game => game.cached).length;
+    $("stats-favs").textContent = favorites.size;
+    $("stats-ports").textContent = ports.length;
+    $("ports-table").innerHTML = ports.length ? ports.map(port => `
+        <tr><td>#${Number(port.num)} · ${escapeHtml(port.name)}</td>
+        <td><code>${escapeHtml(port.url)}</code></td>
+        <td><button class="btn small" onclick="stopPort(${Number(port.port)})">STOP</button></td></tr>
+    `).join("") : `<tr><td colspan="3" class="muted">No game servers are running.</td></tr>`;
+    updateCounts();
 }
-
-function openPort(url) {
-    window.open(url, "_blank");
-}
-
 function renderQuote(quote) {
     if (!quote) return;
     $("quote-text").textContent = (quote.lines || []).join(" ");
     $("quote-author").textContent = `— ${quote.author || "CODEX"}`;
 }
-
 async function nextQuote() {
     try {
         const response = await fetch("/api/quote");
         const data = await response.json();
         renderQuote(data.quote);
-    } catch (error) {
-        showToast("Could not load a new quote.");
-    }
+    } catch (_) { toast("Could not load a new transmission."); }
 }
-
 async function loadGames() {
     try {
         const response = await fetch("/api/games");
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
-
         games = data.games || [];
         ports = data.active_ports || [];
         renderQuote(data.quote);
         renderGames();
+        renderFavorites();
+        renderHome();
         renderStats();
-
-        if (data.status) showToast(data.status);
     } catch (error) {
-        showToast(`Could not load games: ${error}`);
+        toast(`Could not load the game library: ${error.message}`);
     }
 }
-
 async function syncGames() {
     if (busy) return;
-
     busy = true;
     renderGames();
-    showToast("Syncing game library...");
-
+    toast("Syncing game repository...");
     try {
         const response = await fetch("/api/refresh", {
             method: "POST",
-            headers: {"Content-Type": "application/json"},
+            headers: {"Content-Type":"application/json"},
             body: "{}"
         });
         const data = await response.json();
-
         games = data.games || [];
         ports = data.active_ports || [];
         renderGames();
+        renderFavorites();
+        renderHome();
         renderStats();
-        showToast(data.status || "Library synchronized.");
+        toast(data.status || "Library sync complete.");
     } catch (error) {
-        showToast(`Sync failed: ${error}`);
+        toast(`Sync failed: ${error.message}`);
     } finally {
         busy = false;
         renderGames();
     }
 }
-
 function updateProgress(data) {
-    const percent = Math.max(
-        0,
-        Math.min(100, Number(data.percent || 0))
-    );
-
-    $("loader-stage").textContent = data.stage || "Working...";
-    $("loader-percent").textContent = `${percent.toFixed(1)}%`;
-    $("loader-fill").style.width = `${percent}%`;
+    const pct = Math.max(0, Math.min(100, Number(data.percent) || 0));
+    $("loader-stage").textContent = data.stage || "Working";
+    $("loader-percent").textContent = `${pct.toFixed(1)}%`;
+    $("loader-fill").style.width = `${pct}%`;
     $("loader-detail").textContent = data.detail || "";
-    $("loader-files").textContent =
-        `${data.filesDone || 0} / ${data.filesTotal || 0}`;
+    $("loader-files").textContent = `${data.filesDone || 0} / ${data.filesTotal || 0}`;
 }
-
 async function launchGame(number) {
     if (busy) return;
-
     busy = true;
     showView("games");
     $("loader").classList.add("active");
-    updateProgress({
-        stage: "Preparing",
-        detail: `Starting Game #${number}...`,
-        percent: 1
-    });
+    updateProgress({stage:"Preparing game", detail:`Starting game #${number}...`, percent:1});
+    recent = [number, ...recent.filter(item => item !== number)].slice(0,12);
+    store("codex-recent", recent);
+    renderHome();
     renderGames();
 
     progressTimer = setInterval(async () => {
@@ -2080,34 +1876,31 @@ async function launchGame(number) {
             const response = await fetch("/api/progress");
             updateProgress(await response.json());
         } catch (_) {}
-    }, 150);
+    }, 250);
 
     try {
         const response = await fetch("/api/launch", {
             method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({
-                num: number,
-                force_redownload: false
-            })
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({num:number, force_redownload:false})
         });
         const data = await response.json();
-
         games = data.games || games;
         ports = data.active_ports || ports;
-
         if (data.progress) updateProgress(data.progress);
         renderGames();
+        renderFavorites();
+        renderHome();
         renderStats();
 
         if (data.ok && data.url) {
-            showToast(`Game ready at ${data.url}`);
-            window.open(data.url, "_blank");
+            try { await navigator.clipboard.writeText(data.url); } catch (_) {}
+            toast(`Game is live at ${data.url} — link copied when clipboard access is available.`);
         } else {
-            showToast(data.status || "Game launch failed.");
+            toast(data.status || "Game launch failed.");
         }
     } catch (error) {
-        showToast(`Launch failed: ${error}`);
+        toast(`Launch failed: ${error.message}`);
     } finally {
         clearInterval(progressTimer);
         progressTimer = null;
@@ -2115,81 +1908,134 @@ async function launchGame(number) {
         renderGames();
     }
 }
-
 async function stopPort(port) {
     try {
         const response = await fetch("/api/stop_port", {
             method: "POST",
-            headers: {"Content-Type": "application/json"},
+            headers: {"Content-Type":"application/json"},
             body: JSON.stringify({port})
         });
         const data = await response.json();
-
         games = data.games || games;
         ports = data.active_ports || [];
         renderGames();
+        renderFavorites();
+        renderHome();
         renderStats();
-        showToast(data.status || "Port stopped.");
+        toast(data.status || "Port stopped.");
     } catch (error) {
-        showToast(`Could not stop port: ${error}`);
+        toast(`Could not stop port: ${error.message}`);
     }
 }
 
-const canvas = $("particles");
-const context = canvas.getContext("2d");
-let particleList = [];
+/* Pointer-reactive particle field: nearby particles are repelled by the cursor;
+   clicks send a visible red shockwave through the field. */
+const canvas = $("fx-canvas");
+const ctx = canvas.getContext("2d");
+const pointer = {x:-1000, y:-1000, active:false};
+let particles = [];
+let ripples = [];
+let intensity = 65;
+let particlesEnabled = true;
+let reducedMotion = false;
+let width = 0, height = 0, dpr = 1;
 
 function resizeCanvas() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = Math.floor(width * dpr);
+    canvas.height = Math.floor(height * dpr);
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    seedParticles();
 }
-
-function createParticles() {
-    particleList = Array.from(
-        {length: Math.min(80, Math.floor(window.innerWidth / 16))},
-        () => ({
-            x: Math.random() * canvas.width,
-            y: Math.random() * canvas.height,
-            radius: Math.random() * 1.8 + .4,
-            speed: Math.random() * .35 + .1,
-            alpha: Math.random() * .55 + .1
-        })
-    );
+function seedParticles() {
+    const count = Math.round((width * height / 14500) * (intensity / 65));
+    particles = Array.from({length:Math.max(0, Math.min(115, count))}, () => ({
+        x:Math.random()*width, y:Math.random()*height,
+        vx:(Math.random()-.5)*.24, vy:(Math.random()-.5)*.24,
+        radius:Math.random()*1.5+.45, alpha:Math.random()*.42+.12
+    }));
 }
-
-function animateParticles() {
-    context.clearRect(0, 0, canvas.width, canvas.height);
-
-    for (const particle of particleList) {
-        particle.y -= particle.speed;
-        if (particle.y < -5) {
-            particle.y = canvas.height + 5;
-            particle.x = Math.random() * canvas.width;
-        }
-
-        context.fillStyle = `rgba(168,137,255,${particle.alpha})`;
-        context.beginPath();
-        context.arc(
-            particle.x,
-            particle.y,
-            particle.radius,
-            0,
-            Math.PI * 2
-        );
-        context.fill();
-    }
-
-    requestAnimationFrame(animateParticles);
+function pointerMove(event) {
+    pointer.x = event.clientX;
+    pointer.y = event.clientY;
+    pointer.active = true;
 }
-
-window.addEventListener("resize", () => {
-    resizeCanvas();
-    createParticles();
+window.addEventListener("pointermove", pointerMove, {passive:true});
+window.addEventListener("pointerleave", () => { pointer.active = false; });
+window.addEventListener("pointerdown", event => {
+    if (!particlesEnabled || reducedMotion) return;
+    ripples.push({x:event.clientX,y:event.clientY,r:4,alpha:.65});
 });
+function drawFrame() {
+    ctx.clearRect(0,0,width,height);
+    if (particlesEnabled) {
+        for (const p of particles) {
+            if (!reducedMotion) {
+                p.x += p.vx; p.y += p.vy;
+                if (pointer.active) {
+                    const dx=p.x-pointer.x, dy=p.y-pointer.y, dist=Math.hypot(dx,dy);
+                    if (dist<135 && dist>0) {
+                        const force=(135-dist)/135*.055;
+                        p.vx += dx/dist*force;
+                        p.vy += dy/dist*force;
+                    }
+                }
+                p.vx *= .994; p.vy *= .994;
+                if (p.x<0 || p.x>width) p.vx *= -1;
+                if (p.y<0 || p.y>height) p.vy *= -1;
+                p.x=Math.max(0,Math.min(width,p.x));
+                p.y=Math.max(0,Math.min(height,p.y));
+            }
 
+            ctx.beginPath();
+            ctx.fillStyle=`rgba(255,55,72,${p.alpha})`;
+            ctx.arc(p.x,p.y,p.radius,0,Math.PI*2);
+            ctx.fill();
+
+            if (pointer.active) {
+                const dx=p.x-pointer.x, dy=p.y-pointer.y, dist=Math.hypot(dx,dy);
+                if (dist<115) {
+                    ctx.beginPath();
+                    ctx.strokeStyle=`rgba(255,55,72,${(1-dist/115)*.15})`;
+                    ctx.lineWidth=.7;
+                    ctx.moveTo(p.x,p.y);
+                    ctx.lineTo(pointer.x,pointer.y);
+                    ctx.stroke();
+                }
+            }
+        }
+        if (!reducedMotion) {
+            ripples = ripples.filter(ripple => ripple.alpha>.015);
+            for (const ripple of ripples) {
+                ctx.beginPath();
+                ctx.strokeStyle=`rgba(255,55,72,${ripple.alpha})`;
+                ctx.lineWidth=1.2;
+                ctx.arc(ripple.x,ripple.y,ripple.r,0,Math.PI*2);
+                ctx.stroke();
+                ripple.r += 2.4;
+                ripple.alpha *= .965;
+            }
+        }
+    }
+    requestAnimationFrame(drawFrame);
+}
+$("setting-particles").addEventListener("change", event => {
+    particlesEnabled = event.target.checked;
+});
+$("setting-motion").addEventListener("change", event => {
+    reducedMotion = event.target.checked;
+});
+$("setting-intensity").addEventListener("input", event => {
+    intensity = Number(event.target.value);
+    seedParticles();
+});
+window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
-createParticles();
-animateParticles();
+drawFrame();
 loadGames();
 </script>
 </body>
@@ -2224,14 +2070,12 @@ def make_ui_handler(state: LauncherState):
                 return
 
             if path == "/api/games":
-                with state.lock:
-                    payload = {
-                        "games": state.serialize_games(),
-                        "active_ports": state.active_ports(),
-                        "status": state.status,
-                        "quote": dict(state.quote),
-                    }
-                self.send_json(payload)
+                self.send_json({
+                    "games": state.serialize_games(),
+                    "active_ports": state.active_ports(),
+                    "status": state.status,
+                    "quote": dict(state.quote),
+                })
                 return
 
             if path == "/api/quote":
@@ -2246,11 +2090,10 @@ def make_ui_handler(state: LauncherState):
 
         def do_POST(self):
             path = urlparse(self.path).path
-            content_length = int(self.headers.get("Content-Length", "0"))
-            raw_body = self.rfile.read(content_length).decode("utf-8")
-
+            length = min(int(self.headers.get("Content-Length", "0")), 16_384)
+            raw = self.rfile.read(length).decode("utf-8", errors="replace")
             try:
-                body = json.loads(raw_body) if raw_body else {}
+                body = json.loads(raw) if raw else {}
             except json.JSONDecodeError:
                 body = {}
 
@@ -2279,7 +2122,7 @@ def make_ui_handler(state: LauncherState):
     return UIHandler
 
 # =============================================================================
-# Application entry point
+# Application startup
 # =============================================================================
 
 if __name__ == "__main__":
@@ -2296,16 +2139,17 @@ if __name__ == "__main__":
     threading.Thread(
         target=ui_server.serve_forever,
         daemon=True,
+        name="codex-launcher-ui",
     ).start()
 
     window = webview.create_window(
-        title="CodeX Returns Arcade",
+        title="CODEX-RETURNS // ARCADE",
         url=f"http://127.0.0.1:{ui_port}/",
         width=1366,
         height=820,
         min_size=(860, 600),
         maximized=True,
-        background_color="#090a10",
+        background_color="#090707",
     )
 
     try:
