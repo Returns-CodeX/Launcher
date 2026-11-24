@@ -1,30 +1,32 @@
-# CodeX-Returns v10 setup
+# CodeX-Returns v10 setup (local login)
 
-This adds a redesigned launcher UI while reusing the existing downloader in `CodeX-Returns.py`.
+This launcher uses the existing game engine in `CodeX-Returns.py` and the redesigned `launcher_ui.html` interface. It does **not** require an authentication server.
 
-## Install and run
+## Run the launcher
 
-1. Keep `Launcher-v10.py`, `launcher_ui.html`, `CodeX-Returns.py`, and `launcher_config.example.json` together.
-2. Install the existing dependencies: `python -m pip install requests pywebview`.
-3. Copy `launcher_config.example.json` to `launcher_config.json` and adjust the games repository settings if needed.
-4. Configure an HTTPS authentication service URL in `launcher_config.json` (`auth_api_url`) or set `CODEX_AUTH_API_URL` in the environment.
-5. Run `python Launcher-v10.py`.
+Keep these files together: `Launcher-v10.py`, `launcher_ui.html`, `CodeX-Returns.py`, `create_user.py`, and `launcher_config.example.json`.
 
-The launcher uses the current game API (sync, launch, progress, stop port, quote) and displays the UI in pywebview. Game sessions remain bound to localhost. Cached games and the game index continue to use `.cache/`.
+```bash
+python -m pip install requests pywebview
+```
 
-## Authentication service and private repositories
+Copy `launcher_config.example.json` to `launcher_config.json` and adjust the game repository if needed. The default accounts path is `Security/users.json`, relative to the launcher folder. Put the generated accounts file there (or change `auth_users_file` to its path), then run:
 
-The authentication service is separate from the game repository. It must provide:
+```bash
+python create_user.py
+python Launcher-v10.py
+```
 
-- `POST {auth_api_url}/lookup` with `{"username":"..."}`. Return `{"ok":true,"registered":true,"display_name":"..."}` for a known user, or `{"ok":true,"registered":false}` otherwise.
-- `POST {auth_api_url}/login` with `{"username":"...","password":"..."}`. Return `{"ok":true,"display_name":"..."}` only after validating the account; return a non-2xx response or `{"ok":false,"error":"..."}` on rejection.
+`create_user.py` prompts for username, display name, and password and writes a salted PBKDF2-HMAC-SHA256 verifier. Add additional accounts by running it again. It never writes a plaintext password. Keep the account file in your separate `Security` repo if you want, then copy/download it to the configured path before launching.
 
-Passwords are sent over HTTPS directly to that service and are not written to launcher files or disk. Use a server-side password hash (for example Argon2id or bcrypt), request throttling, and generic login failure responses. The service must not return password hashes or credential records to the launcher.
+## Important security limits
 
-A private GitHub repository does not make its files anonymously accessible: the launcher would need credentials to fetch them. **Do not embed a GitHub PAT, encryption key, or password database in a desktop app or a public launcher repo.** Anyone with the app can extract embedded secrets, and client-side encryption cannot hide a decryption key shipped with that app. Use a server-side authentication service to access private data. A separate `Security` repository may hold non-secret configuration; it is not a secure place for secrets if the repo is public, and private-repo access still needs server-side credentials.
+This provides a basic local convenience gate only. It is not a robust security boundary: someone with the launcher or access to the computer can patch/bypass it, and an offline verifier can be guessed if a password is weak. Use a unique, long password. A public account file does not reveal the original password directly, but exposes usernames and lets attackers attempt offline guesses; keep it private if that matters.
 
-If no auth service is configured, the login page reports that sign-in is not configured and does not proceed. This sign-in is for the local launcher UI; it is not a substitute for OS account security or a hosted, multi-user access-control system.
+Base64 is encoding, not encryption. A password database encrypted with a key shipped in the launcher would also be recoverable. This implementation stores salted, deliberately slow password hashes instead of plaintext or reversible encryption. The game repository remains separate from the account data.
 
-## Device stats and privacy
+A private GitHub `Security` repo cannot be fetched anonymously. Without an authentication service, keep a local clone/copy of `Security/users.json` at the configured path. Do not put a GitHub access token in the launcher. Local login only gates this running desktop UI; it cannot securely restrict the games to authorized users.
 
-Clock is local time. Battery, CPU and memory are displayed only when the embedded browser exposes them; browser privacy restrictions may make some hardware data unavailable. Favorites are stored in browser local storage. Launch history is session-only. The launcher binds its UI server to `127.0.0.1`.
+## UI features
+
+Home with featured games and session overview, searchable games page, stats/device snapshot, favorites, active local ports, local clock, best-effort battery status, animated interactive ambient particles, and reduced-motion support. Browser privacy settings may prevent reporting battery, CPU, or memory data. Favorites are saved in browser local storage; launch history is only kept for the current session.

@@ -1,1 +1,1 @@
-{"games_repo_url":"https://github.com/Returns-CodeX/CodeX-files","games_branch":"main","games_folder":"files","auth_api_url":"https://your-auth-service.example/api"}
+{"games_repo_url":"https://github.com/Returns-CodeX/CodeX-files","games_branch":"main","games_folder":"files","auth_users_file":"Security/users.json"}

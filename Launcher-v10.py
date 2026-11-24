@@ -1,12 +1,13 @@
-"""CodeX Returns v10 entry point and optional remote-auth gateway.
+"""CodeX Returns v10 launcher using a local salted password-hash file.
 
-This wrapper reuses the established game downloader in CodeX-Returns.py and
-serves launcher_ui.html as the new launcher interface. It does not store user
-credentials or GitHub tokens. Configure CODEX_AUTH_API_URL (HTTPS) for an
-independent authentication service implementing the contract in V10-SETUP.md.
+This is a convenience login gate for a local desktop app, not an access-control
+boundary. Do not treat a public hash file as secret or as a substitute for a
+server-side authentication system.
 """
 from __future__ import annotations
 
+import hashlib
+import hmac
 import importlib.util
 import json
 import os
@@ -17,15 +18,15 @@ import time
 from http.cookies import SimpleCookie
 from http.server import ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlparse
 
-import requests
 import webview
 
 ROOT = Path(__file__).resolve().parent
 CONFIG_PATH = ROOT / "launcher_config.json"
 UI_PATH = ROOT / "launcher_ui.html"
 SESSION_TTL = 8 * 60 * 60
+MIN_ITERATIONS = 100_000
+MAX_ITERATIONS = 2_000_000
 
 
 def load_config() -> dict:
@@ -37,12 +38,8 @@ def load_config() -> dict:
             raise RuntimeError(f"Could not read {CONFIG_PATH.name}: {exc}") from exc
     if not isinstance(config, dict):
         raise RuntimeError("launcher_config.json must contain a JSON object.")
-    api_url = os.environ.get("CODEX_AUTH_API_URL", config.get("auth_api_url", ""))
-    if api_url:
-        parsed = urlparse(api_url)
-        if parsed.scheme != "https" or not parsed.netloc:
-            raise RuntimeError("auth_api_url must be an HTTPS URL.")
-    config["auth_api_url"] = api_url.rstrip("/")
+    users_path = Path(config.get("auth_users_file", "Security/users.json"))
+    config["auth_users_file"] = (ROOT / users_path).resolve() if not users_path.is_absolute() else users_path
     return config
 
 
@@ -57,13 +54,56 @@ def load_legacy_backend():
     return module
 
 
+def load_users(path: Path) -> dict[str, dict]:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError as exc:
+        raise RuntimeError(f"Account file not found: {path}. Create it with create_user.py.") from exc
+    except (OSError, json.JSONDecodeError) as exc:
+        raise RuntimeError(f"Could not read account file: {exc}") from exc
+    if not isinstance(data, dict) or data.get("version") != 1 or not isinstance(data.get("users"), list):
+        raise RuntimeError("Account file has an invalid format. See V10-SETUP.md.")
+    accounts = {}
+    for user in data["users"]:
+        if not isinstance(user, dict):
+            continue
+        name = str(user.get("username", "")).strip()
+        if name:
+            accounts[name.casefold()] = user
+    return accounts
+
+
+def check_password(record: dict, password: str) -> bool:
+    try:
+        salt = bytes.fromhex(record["salt"])
+        expected = bytes.fromhex(record["password_hash"])
+        iterations = int(record["iterations"])
+        if not (16 <= len(salt) <= 64 and len(expected) == 32 and MIN_ITERATIONS <= iterations <= MAX_ITERATIONS):
+            return False
+        candidate = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, iterations, dklen=32)
+        return hmac.compare_digest(candidate, expected)
+    except (KeyError, TypeError, ValueError, UnicodeEncodeError):
+        return False
+
+
 def make_v10_handler(backend, state, config):
     BaseHandler = backend.make_ui_handler(state)
-    auth_api = config.get("auth_api_url", "")
+    users_path: Path = config["auth_users_file"]
     sessions: dict[str, tuple[str, float]] = {}
     sessions_lock = threading.Lock()
 
     class V10Handler(BaseHandler):
+        def _send_json_with_headers(self, payload, headers=None, code=200):
+            raw = json.dumps(payload).encode("utf-8")
+            self.send_response(code)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(raw)))
+            self.send_header("Cache-Control", "no-store")
+            for name, value in (headers or {}).items():
+                self.send_header(name, value)
+            self.end_headers()
+            self.wfile.write(raw)
+
         def _body(self):
             try:
                 length = min(int(self.headers.get("Content-Length", "0")), 16_384)
@@ -89,23 +129,6 @@ def make_v10_handler(backend, state, config):
                 sessions[token.value] = (record[0], now + SESSION_TTL)
             return True
 
-        def _remote_auth(self, endpoint, payload):
-            if not auth_api:
-                self._send_json({"ok": False, "error": "Remote sign-in is not configured. Set CODEX_AUTH_API_URL."}, 503)
-                return None
-            try:
-                response = requests.post(f"{auth_api}/{endpoint}", json=payload, timeout=12)
-                if response.status_code in (401, 404):
-                    return {"ok": False, "error": "Account not found or credentials are incorrect."}
-                response.raise_for_status()
-                data = response.json()
-                if not isinstance(data, dict):
-                    raise ValueError("Authentication service returned an invalid response.")
-                return data
-            except (requests.RequestException, ValueError) as exc:
-                self._send_json({"ok": False, "error": f"Authentication service unavailable: {exc}"}, 502)
-                return None
-
         def do_GET(self):
             if self.path.split("?", 1)[0] in ("/", "/index.html"):
                 try:
@@ -126,27 +149,29 @@ def make_v10_handler(backend, state, config):
         def do_POST(self):
             path = self.path.split("?", 1)[0]
             payload = self._body()
-            if path == "/api/auth/lookup":
-                data = self._remote_auth("lookup", {"username": str(payload.get("username", ""))[:80]})
-                if data is not None and data.get("ok"):
-                    return self._send_json({"ok": True, "registered": bool(data.get("registered")), "display_name": str(data.get("display_name", ""))[:80]})
-                if data is not None:
-                    return self._send_json(data, 401)
-                return
-            if path == "/api/auth/login":
-                username = str(payload.get("username", ""))[:80]
+            if path in ("/api/auth/lookup", "/api/auth/login"):
+                username = str(payload.get("username", "")).strip()[:80]
+                if not username:
+                    return self._send_json({"ok": False, "error": "Enter a username."}, 400)
+                try:
+                    user = load_users(users_path).get(username.casefold())
+                except RuntimeError as exc:
+                    return self._send_json({"ok": False, "error": str(exc)}, 503)
+                if path == "/api/auth/lookup":
+                    if not user:
+                        return self._send_json({"ok": True, "registered": False})
+                    return self._send_json({"ok": True, "registered": True, "display_name": str(user.get("display_name") or username)[:80]})
                 password = str(payload.get("password", ""))[:1024]
-                data = self._remote_auth("login", {"username": username, "password": password})
-                if data is None:
-                    return
-                if not data.get("ok"):
-                    return self._send_json({"ok": False, "error": str(data.get("error", "Incorrect password."))[:200]}, 401)
+                if not user or not check_password(user, password):
+                    return self._send_json({"ok": False, "error": "Account or password is incorrect."}, 401)
                 token = secrets.token_urlsafe(32)
+                display_name = str(user.get("display_name") or username)[:80]
                 with sessions_lock:
-                    sessions[token] = (str(data.get("display_name") or username), time.time() + SESSION_TTL)
-                self._send_json({"ok": True, "display_name": str(data.get("display_name") or username)[:80]}, 200)
-                self.send_header("Set-Cookie", f"codex_session={token}; HttpOnly; SameSite=Strict; Path=/; Max-Age={SESSION_TTL}")
-                return
+                    sessions[token] = (display_name, time.time() + SESSION_TTL)
+                return self._send_json_with_headers(
+                    {"ok": True, "display_name": display_name},
+                    {"Set-Cookie": f"codex_session={token}; HttpOnly; SameSite=Strict; Path=/; Max-Age={SESSION_TTL}"},
+                )
             if path == "/api/auth/logout":
                 cookie = SimpleCookie()
                 try:
@@ -157,9 +182,10 @@ def make_v10_handler(backend, state, config):
                             sessions.pop(token.value, None)
                 except Exception:
                     pass
-                self._send_json({"ok": True})
-                self.send_header("Set-Cookie", "codex_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0")
-                return
+                return self._send_json_with_headers(
+                    {"ok": True},
+                    {"Set-Cookie": "codex_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0"},
+                )
             if path.startswith("/api/") and not self._authenticated():
                 return self._send_json({"error": "Sign in required."}, 401)
             return super().do_POST()
